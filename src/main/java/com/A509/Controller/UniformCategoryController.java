@@ -1,5 +1,6 @@
 package com.A509.Controller;
 
+import com.A509.DTO.UniformCategoryRequest;
 import com.A509.Entity.UniformCategory;
 import com.A509.Service.UniformCategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +50,7 @@ public class UniformCategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<?> addCategory(@RequestBody UniformCategory category) {
+    public ResponseEntity<?> addCategory(@RequestBody UniformCategoryRequest category) {
         try {
             return ResponseEntity.ok(categoryService.addCategory(category));
         } catch (RuntimeException e) {
@@ -58,7 +59,7 @@ public class UniformCategoryController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateCategory(@PathVariable Long id, @RequestBody UniformCategory category) {
+    public ResponseEntity<?> updateCategory(@PathVariable Long id, @RequestBody UniformCategoryRequest category) {
         try {
             return ResponseEntity.ok(categoryService.updateCategory(id, category));
         } catch (RuntimeException e) {

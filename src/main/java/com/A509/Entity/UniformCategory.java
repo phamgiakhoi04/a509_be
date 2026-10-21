@@ -31,6 +31,9 @@ public class UniformCategory {
     @Column(name = "category_name", nullable = false)
     private String categoryName;
 
+    @Column(name = "slug")
+    private String slug;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 
@@ -44,6 +47,9 @@ public class UniformCategory {
     @JsonManagedReference
     @Builder.Default
     private List<UniformCategory> children = new ArrayList<>();
+
+    @Column(name = "country_id")
+    private Long countryId;
 
     // Category type: REENACTMENT, UNIFORM, DOCUMENT
     @Enumerated(EnumType.STRING)

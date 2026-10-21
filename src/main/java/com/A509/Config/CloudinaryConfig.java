@@ -22,6 +22,10 @@ public class CloudinaryConfig {
 
     @Bean
     public Cloudinary cloudinary() {
+        cloudName = cloudName == null ? "" : cloudName.trim();
+        if (!cloudName.matches("[a-z0-9_-]+")) {
+            throw new IllegalStateException("CLOUDINARY_CLOUD_NAME không hợp lệ; chỉ dùng cloud name, không dùng tên hiển thị có khoảng trắng.");
+        }
         Map<String, String> config = new HashMap<>();
         config.put("cloud_name", cloudName);
         config.put("api_key", apiKey);
