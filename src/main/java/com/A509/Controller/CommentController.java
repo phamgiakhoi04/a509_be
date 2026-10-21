@@ -24,6 +24,15 @@ public class CommentController {
         }
     }
 
+    @GetMapping("/article/{articleId}")
+    public ResponseEntity<List<CommentDTO>> getArticleComments(@PathVariable Long articleId) {
+        try {
+            return ResponseEntity.ok(commentService.getCommentsByArticleId(articleId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @PostMapping
     public ResponseEntity<?> addComment(@RequestBody CommentDTO dto) {
         try {

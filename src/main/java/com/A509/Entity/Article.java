@@ -98,5 +98,10 @@ public class Article {
         @Builder.Default
         @ToString.Exclude
         private List<ArticleImage> images = new ArrayList<>();
+
+    @OneToMany(mappedBy = "article", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @Builder.Default
+    @ToString.Exclude
+    private List<Comment> comments = new ArrayList<>();
         
 }

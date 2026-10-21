@@ -27,9 +27,13 @@ public class Comment {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uniform_id", nullable = false)
+    @JoinColumn(name = "uniform_id")
     @JsonBackReference // <--- Thay JsonIgnore bằng cái này
     private Uniform uniform;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "article_id")
+    private Article article;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

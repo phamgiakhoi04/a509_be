@@ -1,9 +1,11 @@
 package com.A509.Service;
 
 import com.A509.DTO.CommentDTO;
+import com.A509.Entity.Article;
 import com.A509.Entity.Comment;
 import com.A509.Entity.Uniform;
 import com.A509.Entity.User;
+import com.A509.Repository.ArticleRepository;
 import com.A509.Repository.CommentRepository;
 import com.A509.Repository.UniformRepository;
 import com.A509.Repository.UserRepository;
@@ -27,6 +29,10 @@ public class CommentService {
     @Autowired
     private UniformRepository uniformRepository;
 
+    @Autowired
+    private ArticleRepository articleRepository;
+
+    @Transactional(readOnly = true)
     public List<CommentDTO> getCommentsByUniformId(Long uniformId) {
         if (!uniformRepository.existsById(uniformId)) {
             throw new RuntimeException("Quân trang không tồn tại!");
@@ -36,24 +42,44 @@ public class CommentService {
         return comments.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<CommentDTO> getCommentsByArticleId(Long articleId) {
+        if (!articleRepository.existsById(articleId)) {
+            throw new RuntimeException("Bài viết không tồn tại!");
+        }
+
+        List<Comment> comments = commentRepository.findByArticle_IdOrderByCreatedAtDesc(articleId);
+        return comments.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
     @Transactional
     public CommentDTO addComment(CommentDTO dto) {
         if (dto.getContent() == null || dto.getContent().trim().isEmpty()) {
             throw new RuntimeException("Nội dung bình luận không được để trống!");
         }
+        if ((dto.getUniformId() == null) == (dto.getArticleId() == null)) {
+            throw new RuntimeException("Bình luận phải thuộc một quân trang hoặc một bài viết!");
+        }
 
         User user = getCurrentUser();
-        Uniform uniform = uniformRepository.findById(dto.getUniformId())
-                .orElseThrow(() -> new RuntimeException("Quân trang không tồn tại!"));
+        Uniform uniform = null;
+        Article article = null;
+        if (dto.getUniformId() != null) {
+            uniform = uniformRepository.findById(dto.getUniformId())
+                    .orElseThrow(() -> new RuntimeException("Quân trang không tồn tại!"));
+        } else {
+            article = articleRepository.findById(dto.getArticleId())
+                    .orElseThrow(() -> new RuntimeException("Bài viết không tồn tại!"));
+        }
 
         Comment comment = Comment.builder()
                 .content(dto.getContent().trim())
                 .user(user)
                 .uniform(uniform)
+                .article(article)
                 .build();
 
-        Comment saved = commentRepository.save(comment);
-        return convertToDTO(saved);
+        return convertToDTO(commentRepository.save(comment));
     }
 
     @Transactional
@@ -64,7 +90,6 @@ public class CommentService {
 
         Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Bình luận không tồn tại"));
-
         User currentUser = getCurrentUser();
 
         if (!comment.getUser().getId().equals(currentUser.getId())) {
@@ -72,8 +97,7 @@ public class CommentService {
         }
 
         comment.setContent(newContent.trim());
-        Comment updated = commentRepository.save(comment);
-        return convertToDTO(updated);
+        return convertToDTO(commentRepository.save(comment));
     }
 
     @Transactional
@@ -83,7 +107,6 @@ public class CommentService {
 
         User currentUser = getCurrentUser();
         boolean isAdmin = isCurrentUserAdmin();
-
         if (!isAdmin && !comment.getUser().getId().equals(currentUser.getId())) {
             throw new RuntimeException("Bạn không có quyền xóa bình luận này!");
         }
@@ -106,7 +129,12 @@ public class CommentService {
         CommentDTO dto = new CommentDTO();
         dto.setId(comment.getId());
         dto.setContent(comment.getContent());
-        dto.setUniformId(comment.getUniform().getId());
+        if (comment.getUniform() != null) {
+            dto.setUniformId(comment.getUniform().getId());
+        }
+        if (comment.getArticle() != null) {
+            dto.setArticleId(comment.getArticle().getId());
+        }
         dto.setUserId(comment.getUser().getId());
         dto.setUsername(comment.getUser().getUsername());
         dto.setUserAvatarUrl(comment.getUser().getAvatarUrl());
