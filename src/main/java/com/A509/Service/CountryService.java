@@ -4,6 +4,7 @@ import com.A509.Entity.Country;
 import com.A509.Repository.CountryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +52,7 @@ public class CountryService {
         return countryRepository.findByCountryNameContainingIgnoreCase(keyword);
     }
 
+    @Transactional
     public void deleteCountry(Long id) {
         Country country = countryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Quốc gia không tồn tại"));
