@@ -32,5 +32,6 @@ public class ArticleImage {
     private String description;
 
     @Column(name = "sort_order")
+    @Builder.Default
     private Integer sortOrder = 0;
 }

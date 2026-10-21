@@ -61,7 +61,7 @@ public class ArticleImageService {
         }
 
         // Upload lên Cloudinary
-        Map uploadResult = cloudinary.uploader().upload(
+        Map<?, ?> uploadResult = cloudinary.uploader().upload(
                 file.getBytes(),
                 ObjectUtils.emptyMap()
         );
