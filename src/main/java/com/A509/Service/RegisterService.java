@@ -9,6 +9,7 @@ import com.A509.Repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class RegisterService {
@@ -18,6 +19,9 @@ public class RegisterService {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Transactional
     public UserDTO registerNewUser(RegisterDTO registerDTO) {
@@ -34,7 +38,7 @@ public class RegisterService {
         User newUser = new User();
         newUser.setUsername(registerDTO.getUsername());
         newUser.setEmail(registerDTO.getEmail());
-        newUser.setPassword(registerDTO.getPassword());
+        newUser.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
         newUser.setFullName(registerDTO.getFullName());
         newUser.setPhoneNumber(registerDTO.getPhoneNumber());
         newUser.setRole(userRole);
