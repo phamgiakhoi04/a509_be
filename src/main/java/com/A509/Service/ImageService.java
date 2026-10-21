@@ -60,6 +60,18 @@ public class ImageService {
         return imageRepository.save(image);
     }
 
+    public Image updateImage(Long id, String description, Boolean sensitive) {
+        Image image = imageRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Ảnh không tồn tại với ID: " + id));
+        if (description != null) {
+            image.setDescription(description.trim());
+        }
+        if (sensitive != null) {
+            image.setSensitive(sensitive);
+        }
+        return imageRepository.save(image);
+    }
+
     public void deleteImage(Long id) {
         Image image = imageRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ảnh không tồn tại với ID: " + id));

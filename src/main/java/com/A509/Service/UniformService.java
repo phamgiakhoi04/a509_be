@@ -70,13 +70,20 @@ public class UniformService {
         Uniform savedUniform = uniformRepository.save(uniform);
 
         if (dto.getImageFiles() != null && !dto.getImageFiles().isEmpty()) {
-            for (MultipartFile file : dto.getImageFiles()) {
+            for (int index = 0; index < dto.getImageFiles().size(); index++) {
+                MultipartFile file = dto.getImageFiles().get(index);
                 if (!file.isEmpty()) {
                     String imageUrl = imageService.uploadImage(file);
                     Image image = new Image();
                     image.setUniform(savedUniform);
                     image.setImageUrl(imageUrl);
-                    image.setDescription("Ảnh chi tiết của " + savedUniform.getName());
+                    String description = dto.getImageDescriptions() != null && index < dto.getImageDescriptions().size()
+                            ? dto.getImageDescriptions().get(index)
+                            : null;
+                    image.setDescription(description == null || description.isBlank()
+                            ? "Ảnh chi tiết của " + savedUniform.getName()
+                            : description.trim());
+                    image.setSensitive(parseSensitive(dto.getImageSensitive(), index));
 
                     imageRepository.save(image);
                 }
@@ -118,13 +125,20 @@ public class UniformService {
         }
 
         if (dto.getImageFiles() != null && !dto.getImageFiles().isEmpty()) {
-            for (MultipartFile file : dto.getImageFiles()) {
+            for (int index = 0; index < dto.getImageFiles().size(); index++) {
+                MultipartFile file = dto.getImageFiles().get(index);
                 if (!file.isEmpty()) {
                     String imageUrl = imageService.uploadImage(file);
                     Image image = new Image();
                     image.setUniform(existingUniform);
                     image.setImageUrl(imageUrl);
-                    image.setDescription("Ảnh chi tiết của " + existingUniform.getName());
+                    String description = dto.getImageDescriptions() != null && index < dto.getImageDescriptions().size()
+                            ? dto.getImageDescriptions().get(index)
+                            : null;
+                    image.setDescription(description == null || description.isBlank()
+                            ? "Ảnh chi tiết của " + existingUniform.getName()
+                            : description.trim());
+                    image.setSensitive(parseSensitive(dto.getImageSensitive(), index));
 
                     imageRepository.save(image);
                 }
@@ -150,5 +164,9 @@ public class UniformService {
 
     public Page<Uniform> getUniformsByCategory(Long categoryId, Pageable pageable) {
         return uniformRepository.findByCategoryId(categoryId, pageable);
+    }
+
+    private boolean parseSensitive(List<String> values, int index) {
+        return values != null && index < values.size() && Boolean.parseBoolean(values.get(index));
     }
 }

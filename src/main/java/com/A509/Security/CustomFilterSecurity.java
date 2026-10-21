@@ -63,6 +63,7 @@ public class CustomFilterSecurity {
                         // POST/PUT/DELETE - ADMIN only
                         .requestMatchers(HttpMethod.POST, "/api/uniforms/**", "/api/images/**", "/api/countries/**").hasAnyAuthority("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/uniforms/**", "/api/images/**", "/api/countries/**").hasAnyAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/images/**").hasAnyAuthority("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/uniforms/**", "/api/images/**", "/api/countries/**").hasAnyAuthority("ADMIN")
 
                         // Comments endpoints

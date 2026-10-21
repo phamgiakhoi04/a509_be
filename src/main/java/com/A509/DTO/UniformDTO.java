@@ -13,4 +13,6 @@ public class UniformDTO {
     private Long countryId;
     private Long categoryId;
     private List<MultipartFile> imageFiles;
+    private List<String> imageDescriptions;
+    private List<String> imageSensitive;
 }
