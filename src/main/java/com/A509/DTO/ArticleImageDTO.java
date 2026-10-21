@@ -14,4 +14,8 @@ public class ArticleImageDTO {
     private String description;
 
     private Integer sortOrder;
+
+    private Long referenceUniformId;
+
+    private String referenceUniformName;
 }

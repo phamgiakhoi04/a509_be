@@ -7,6 +7,7 @@ import com.A509.Entity.Uniform;
 import com.A509.Entity.UniformCategory;
 import com.A509.Repository.CountryRepository;
 import com.A509.Repository.ImageRepository;
+import com.A509.Repository.ArticleImageRepository;
 import com.A509.Repository.UniformRepository;
 import com.A509.Repository.UniformCategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,9 @@ public class UniformService {
 
     @Autowired
     private UniformCategoryRepository categoryRepository;
+
+    @Autowired
+    private ArticleImageRepository articleImageRepository;
 
     public List<Uniform> getAllUniforms() {
         return uniformRepository.findAll();
@@ -159,6 +163,7 @@ public class UniformService {
                 imageService.deleteImageFromCloud(img.getImageUrl());
             }
         }
+        articleImageRepository.clearReferencesToUniform(id);
         uniformRepository.delete(uniform);
     }
 

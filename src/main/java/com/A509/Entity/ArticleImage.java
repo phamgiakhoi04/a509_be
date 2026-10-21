@@ -21,6 +21,10 @@ public class ArticleImage {
     @JoinColumn(name = "article_id", nullable = false)
     private Article article;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "reference_uniform_id")
+    private Uniform referenceUniform;
+
     @Column(name = "image_url", nullable = false)
     private String imageUrl;
 

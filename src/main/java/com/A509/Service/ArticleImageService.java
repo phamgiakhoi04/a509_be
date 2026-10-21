@@ -1,6 +1,7 @@
 package com.A509.Service;
 
 import com.A509.DTO.ArticleImageDTO;
+import com.A509.DTO.ArticleImageUpdateDTO;
 import com.A509.Entity.ActivityLog;
 import com.A509.Entity.Article;
 import com.A509.Entity.ArticleImage;
@@ -8,6 +9,7 @@ import com.A509.Repository.ActivityLogRepository;
 import com.A509.Repository.ArticleImageRepository;
 import com.A509.Repository.ArticleRepository;
 import com.A509.Repository.UserRepository;
+import com.A509.Repository.UniformRepository;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,7 @@ public class ArticleImageService {
     private final ArticleRepository articleRepository;
     private final ActivityLogRepository activityLogRepository;
     private final UserRepository userRepository;
+    private final UniformRepository uniformRepository;
     private final Cloudinary cloudinary;
 
     public ArticleImageService(
@@ -31,12 +34,14 @@ public class ArticleImageService {
             ArticleRepository articleRepository,
             ActivityLogRepository activityLogRepository,
             UserRepository userRepository,
+            UniformRepository uniformRepository,
             Cloudinary cloudinary
     ) {
         this.articleImageRepository = articleImageRepository;
         this.articleRepository = articleRepository;
         this.activityLogRepository = activityLogRepository;
         this.userRepository = userRepository;
+        this.uniformRepository = uniformRepository;
         this.cloudinary = cloudinary;
     }
 
@@ -106,6 +111,14 @@ public class ArticleImageService {
                 .toList();
     }
 
+    public List<ArticleImageDTO> getReferenceImages(Long uniformId) {
+        return articleImageRepository
+                .findByReferenceUniform_IdOrderBySortOrderAsc(uniformId)
+                .stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
     public void deleteImage(
             Long imageId,
             String username
@@ -146,10 +159,21 @@ public class ArticleImageService {
          */
     }
 
-    public ArticleImageDTO updateDescription(Long imageId, String description) {
+    public ArticleImageDTO updateImage(Long imageId, ArticleImageUpdateDTO update) {
         ArticleImage image = articleImageRepository.findById(imageId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy ảnh"));
-        image.setDescription(description == null ? null : description.trim());
+
+        String description = update == null ? null : update.getDescription();
+        image.setDescription(description == null || description.isBlank() ? null : description.trim());
+
+        Long referenceUniformId = update == null ? null : update.getReferenceUniformId();
+        if (referenceUniformId == null) {
+            image.setReferenceUniform(null);
+        } else {
+            image.setReferenceUniform(uniformRepository.findById(referenceUniformId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy hiện vật tham chiếu")));
+        }
+
         return toDTO(articleImageRepository.save(image));
     }
 
@@ -162,6 +186,10 @@ public class ArticleImageService {
         dto.setImageUrl(image.getImageUrl());
         dto.setDescription(image.getDescription());
         dto.setSortOrder(image.getSortOrder());
+        if (image.getReferenceUniform() != null) {
+            dto.setReferenceUniformId(image.getReferenceUniform().getId());
+            dto.setReferenceUniformName(image.getReferenceUniform().getName());
+        }
 
         return dto;
     }

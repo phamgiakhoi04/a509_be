@@ -59,6 +59,7 @@ public class CustomFilterSecurity {
                         .requestMatchers(HttpMethod.GET, "/api/countries/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/uniform-categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/articles/images/references").permitAll()
 
                         // POST/PUT/DELETE - ADMIN only
                         .requestMatchers(HttpMethod.POST, "/api/uniforms/**", "/api/images/**", "/api/countries/**").hasAnyAuthority("ADMIN")
