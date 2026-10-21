@@ -14,6 +14,8 @@ public interface UniformCategoryRepository extends JpaRepository<UniformCategory
 
     boolean existsByCategoryName(String categoryName);
 
+    boolean existsByCountryId(Long countryId);
+
     List<UniformCategory> findByCategoryNameContainingIgnoreCase(String name);
 
     Optional<UniformCategory> findByCategoryName(String categoryName);

@@ -2,6 +2,7 @@ package com.A509.Service;
 
 import com.A509.Entity.Country;
 import com.A509.Repository.CountryRepository;
+import com.A509.Repository.UniformCategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,9 @@ public class CountryService {
     @Autowired
     private CountryRepository countryRepository;
 
+    @Autowired
+    private UniformCategoryRepository categoryRepository;
+
     public List<Country> getAllCountries() {
         return countryRepository.findAll();
     }
@@ -25,7 +29,7 @@ public class CountryService {
 
     public Country addCountry(Country country) {
         if (countryRepository.existsByCountryName(country.getCountryName())) {
-            throw new RuntimeException("Quốc gia '" + country.getCountryName() + "' đã tồn tại!");
+            throw new RuntimeException("Quốc gia đã tồn tại!");
         }
         return countryRepository.save(country);
     }
@@ -34,17 +38,15 @@ public class CountryService {
         Country existingCountry = countryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Quốc gia không tồn tại"));
 
-        if (!existingCountry.getCountryName().equals(countryDetails.getCountryName())) {
-            if (countryRepository.existsByCountryName(countryDetails.getCountryName())) {
-                throw new RuntimeException("Tên quốc gia '" + countryDetails.getCountryName() + "' đã được sử dụng!");
-            }
+        if (!existingCountry.getCountryName().equals(countryDetails.getCountryName())
+                && countryRepository.existsByCountryName(countryDetails.getCountryName())) {
+            throw new RuntimeException("Tên quốc gia đã được sử dụng!");
         }
 
         existingCountry.setCountryName(countryDetails.getCountryName());
         existingCountry.setContinent(countryDetails.getContinent());
         existingCountry.setFlagImageUrl(countryDetails.getFlagImageUrl());
         existingCountry.setDescription(countryDetails.getDescription());
-
         return countryRepository.save(existingCountry);
     }
 
@@ -58,7 +60,11 @@ public class CountryService {
                 .orElseThrow(() -> new RuntimeException("Quốc gia không tồn tại"));
 
         if (country.getUniforms() != null && !country.getUniforms().isEmpty()) {
-            throw new RuntimeException("Không thể xóa quốc gia này vì đã có dữ liệu Quân phục liên quan.");
+            throw new RuntimeException("Không thể xóa quốc gia này vì đã có dữ liệu quân phục liên quan.");
+        }
+
+        if (categoryRepository.existsByCountryId(id)) {
+            throw new RuntimeException("Không thể xóa quốc gia này vì đã có nội dung phục dựng liên quan.");
         }
 
         countryRepository.delete(country);
