@@ -3,6 +3,8 @@ package com.A509.Service;
 import com.A509.Entity.User;
 import com.A509.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +25,9 @@ public class ForgotPasswordService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+
     public String forgotPassword(String email) {
         User user = userRepository.findByEmail(email.trim())
                 .orElseThrow(() -> new RuntimeException("Email không tồn tại trong hệ thống!"));
@@ -31,7 +36,14 @@ public class ForgotPasswordService {
         user.setResetToken(token);
         user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(15)); // Hết hạn sau 15p
         userRepository.save(user);
-        sendEmail(email, token);
+        try {
+            sendEmail(email, token);
+        } catch (MailException ex) {
+            user.setResetToken(null);
+            user.setResetTokenExpiry(null);
+            userRepository.save(user);
+            throw new RuntimeException("Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra cấu hình MAIL_USERNAME/MAIL_PASSWORD.");
+        }
 
         return "Đã gửi link đặt lại mật khẩu vào email: " + email;
     }
@@ -55,7 +67,10 @@ public class ForgotPasswordService {
         String resetLink = "http://localhost:5173/reset-password?token=" + token;
 
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("phamgiakhoilmao@gmail.com");
+        if (mailUsername == null || mailUsername.isBlank()) {
+            throw new MailException("MAIL_USERNAME chưa được cấu hình") {};
+        }
+        message.setFrom(mailUsername);
         message.setTo(toEmail);
         message.setSubject("Yêu cầu đặt lại mật khẩu - A509");
         message.setText("Chào bạn,\n\n"

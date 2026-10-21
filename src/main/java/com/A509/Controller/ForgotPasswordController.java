@@ -17,10 +17,11 @@ public class ForgotPasswordController {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> body) {
         try {
-            String email = body.get("email").trim();
-            if (email == null || email.isEmpty()) {
+            String email = body == null ? null : body.get("email");
+            if (email == null || email.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("Vui lòng nhập email!");
             }
+            email = email.trim();
 
             String response = forgotPasswordService.forgotPassword(email);
             return ResponseEntity.ok(response);
