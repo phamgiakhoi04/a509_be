@@ -35,6 +35,13 @@ public class Image {
     @Builder.Default
     private boolean sensitive = false;
 
+    public enum DisplayMode { GRID, FULL }
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "display_mode", nullable = false, length = 10)
+    @Builder.Default
+    private DisplayMode displayMode = DisplayMode.GRID;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 

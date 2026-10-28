@@ -1,9 +1,11 @@
 package com.A509.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 public class ResetPasswordService {
@@ -11,11 +13,19 @@ public class ResetPasswordService {
     @Autowired
     private JavaMailSender mailSender;
 
+    @Value("${spring.mail.username}")
+    private String mailUsername;
+
+    @Value("${app.frontend-url:http://localhost:5173/}")
+    private String frontendUrl;
+
     public void sendResetPasswordEmail(String toEmail, String token) {
-        String resetLink = "http://localhost:5173/reset-password?token=" + token;
+        String resetLink = UriComponentsBuilder.fromUriString(frontendUrl.replaceAll("/+$", "")
+                        + "/reset-password")
+                .queryParam("token", token).build().encode().toUriString();
 
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("phamgiakhoilmao@gmail.com");
+        message.setFrom(mailUsername);
         message.setTo(toEmail);
         message.setSubject("Yêu cầu đặt lại mật khẩu - A509");
         message.setText("Chào bạn,\n\n"

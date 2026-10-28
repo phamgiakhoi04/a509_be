@@ -22,6 +22,16 @@ public class UniformController {
     @Autowired
     private UniformService uniformService;
 
+    @GetMapping("/reenactment")
+    public ResponseEntity<?> getShowcase(@RequestParam Long countryId, @RequestParam Long categoryId,
+                                        @RequestParam Long periodCategoryId) {
+        try {
+            return ResponseEntity.ok(uniformService.getShowcase(countryId, categoryId, periodCategoryId));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
+    }
+
     @GetMapping
     public ResponseEntity<Page<Uniform>> getAll(
             @RequestParam(defaultValue = "0") int page,

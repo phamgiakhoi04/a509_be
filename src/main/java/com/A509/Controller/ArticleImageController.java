@@ -13,7 +13,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/articles")
-@CrossOrigin
 public class ArticleImageController {
 
     private final ArticleImageService articleImageService;
@@ -28,6 +27,9 @@ public class ArticleImageController {
     public ResponseEntity<ArticleImageDTO> uploadImage(
             @PathVariable Long articleId,
             @RequestParam("file") MultipartFile file,
+            @RequestParam(defaultValue = "false") boolean sensitive,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) Long referenceUniformId,
             Principal principal
     ) throws IOException {
 
@@ -35,7 +37,7 @@ public class ArticleImageController {
                 articleImageService.uploadImage(
                         articleId,
                         file,
-                        principal.getName()
+                        principal.getName(), sensitive, description, referenceUniformId
                 );
 
         return ResponseEntity.ok(result);

@@ -19,6 +19,20 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @GetMapping("/admin")
+    public ResponseEntity<java.util.List<UserDTO>> getUsersForAdmin() {
+        return ResponseEntity.ok(userService.getUsersForAdmin());
+    }
+
+    @PatchMapping("/admin/{id}/status")
+    public ResponseEntity<?> setUserStatus(@PathVariable Long id, @RequestParam boolean enabled) {
+        try {
+            return ResponseEntity.ok(userService.setUserStatus(id, enabled, getCurrentUsername()));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(exception.getMessage());
+        }
+    }
+
     private String getCurrentUsername() {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }

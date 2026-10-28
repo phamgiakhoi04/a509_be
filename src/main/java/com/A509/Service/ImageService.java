@@ -60,7 +60,7 @@ public class ImageService {
         return imageRepository.save(image);
     }
 
-    public Image updateImage(Long id, String description, Boolean sensitive) {
+    public Image updateImage(Long id, String description, Boolean sensitive, Image.DisplayMode displayMode) {
         Image image = imageRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ảnh không tồn tại với ID: " + id));
         if (description != null) {
@@ -69,6 +69,7 @@ public class ImageService {
         if (sensitive != null) {
             image.setSensitive(sensitive);
         }
+        if (displayMode != null) image.setDisplayMode(displayMode);
         return imageRepository.save(image);
     }
 

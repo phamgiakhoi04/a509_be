@@ -1,6 +1,8 @@
 package com.A509.Entity;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -40,7 +42,16 @@ public class Uniform {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id", nullable = true)
+    @JsonIgnoreProperties("children")
     private UniformCategory category;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "period_category_id")
+    @JsonIgnoreProperties("children")
+    private UniformCategory periodCategory;
+
+    @Column(name = "period")
+    private String period;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -56,7 +67,7 @@ public class Uniform {
     private Set<Image> images;
 
     @OneToMany(mappedBy = "uniform", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonManagedReference
+    @JsonIgnore
     @ToString.Exclude
     private Set<Comment> comments;
 }

@@ -29,23 +29,27 @@ public class CustomJwtFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
-        String token = null;
-        String username = null;
-
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            token = authHeader.substring(7);
-            username = jwtUntilHelper.getSubject(token);
-        }
-
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-            if (jwtUntilHelper.verifyToken(token, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+        if (authHeader != null && authHeader.startsWith("Bearer ")
+                && SecurityContextHolder.getContext().getAuthentication() == null) {
+            try {
+                String token = authHeader.substring(7);
+                String username = jwtUntilHelper.getSubject(token);
+                if (username != null) {
+                    // Reload each request so disabling an account revokes existing tokens.
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    if (userDetails.isEnabled() && userDetails.isAccountNonLocked()
+                            && userDetails.isAccountNonExpired() && userDetails.isCredentialsNonExpired()
+                            && jwtUntilHelper.verifyToken(token, userDetails)) {
+                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities());
+                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                    }
+                }
+            } catch (Exception ex) {
+                // Invalid, expired or unresolvable credentials behave as anonymous.
+                // Do not catch exceptions from the downstream application/filter chain.
+                SecurityContextHolder.clearContext();
             }
         }
 

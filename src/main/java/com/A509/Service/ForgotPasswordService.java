@@ -9,6 +9,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -27,6 +28,9 @@ public class ForgotPasswordService {
 
     @Value("${spring.mail.username:}")
     private String mailUsername;
+
+    @Value("${app.frontend-url:http://localhost:5173/}")
+    private String frontendUrl;
 
     public String forgotPassword(String email) {
         User user = userRepository.findByEmail(email.trim())
@@ -64,7 +68,9 @@ public class ForgotPasswordService {
     }
 
     private void sendEmail(String toEmail, String token) {
-        String resetLink = "http://localhost:5173/reset-password?token=" + token;
+        String resetLink = UriComponentsBuilder.fromUriString(frontendUrl.replaceAll("/+$", "")
+                        + "/reset-password")
+                .queryParam("token", token).build().encode().toUriString();
 
         SimpleMailMessage message = new SimpleMailMessage();
         if (mailUsername == null || mailUsername.isBlank()) {

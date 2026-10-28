@@ -29,6 +29,7 @@ public class CategoryController {
     private CategoryDTO toDTO(Category category) {
         return new CategoryDTO(
                 category.getId(), category.getName(), category.getSlug(),
-                category.getDescription(), category.getSortOrder(), category.getIcon());
+                category.getDescription(), category.getSortOrder(), category.getIcon(),
+                category.getParent() == null ? null : category.getParent().getId());
     }
 }

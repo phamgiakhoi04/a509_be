@@ -18,6 +18,7 @@ public class ArticleDTO {
     private String content;
 
     private String thumbnailUrl;
+    private Boolean thumbnailSensitive;
 
     private ArticleStatus status;
 

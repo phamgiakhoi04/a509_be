@@ -2,6 +2,7 @@ package com.A509.Service;
 
 import com.A509.DTO.ActivityLogDTO;
 import com.A509.Entity.ActivityLog;
+import com.A509.Entity.ArticleStatus;
 import com.A509.Repository.ActivityLogRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,12 +24,12 @@ public class ActivityLogService {
     public List<ActivityLogDTO> getLatestActivities() {
 
         return activityLogRepository
-                .findTop10ByActionInOrderByCreatedAtDesc(
+                .findTop10ByActionInAndArticle_StatusAndArticle_DeletedAtIsNullOrderByCreatedAtDesc(
                         List.of(
                                 "CREATE",
                                 "UPDATE",
                                 "ADD_IMAGE"
-                        )
+                        ), ArticleStatus.PUBLISHED
                 )
                 .stream()
                 .map(this::toDTO)
@@ -41,18 +42,18 @@ public class ActivityLogService {
 
         dto.setId(log.getId());
         dto.setAction(log.getAction());
-        dto.setDescription(log.getDescription());
+        // Log descriptions may contain old draft titles or administrative details.
+        dto.setDescription(switch (log.getAction()) {
+            case "CREATE" -> "Bài viết mới: ";
+            case "ADD_IMAGE" -> "Thêm ảnh: ";
+            default -> "Cập nhật: ";
+        } + log.getArticle().getTitle());
         dto.setCreatedAt(log.getCreatedAt());
 
         if (log.getArticle() != null) {
             dto.setArticleId(log.getArticle().getId());
             dto.setArticleSlug(log.getArticle().getSlug());
             dto.setArticleTitle(log.getArticle().getTitle());
-        }
-
-        if (log.getUser() != null) {
-            dto.setUserId(log.getUser().getId());
-            dto.setUsername(log.getUser().getUsername());
         }
 
         return dto;

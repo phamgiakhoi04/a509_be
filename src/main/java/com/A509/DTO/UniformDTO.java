@@ -12,7 +12,9 @@ public class UniformDTO {
     private String material;
     private Long countryId;
     private Long categoryId;
+    private Long periodCategoryId;
     private List<MultipartFile> imageFiles;
     private List<String> imageDescriptions;
     private List<String> imageSensitive;
+    private List<String> imageDisplayModes;
 }

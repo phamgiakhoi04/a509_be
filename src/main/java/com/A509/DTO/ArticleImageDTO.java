@@ -10,6 +10,8 @@ public class ArticleImageDTO {
     private Long articleId;
 
     private String imageUrl;
+    private boolean sensitive;
+    private String referenceWarning;
 
     private String description;
 

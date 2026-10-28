@@ -5,6 +5,11 @@ import com.A509.DTO.ArticleImageUpdateDTO;
 import com.A509.Entity.ActivityLog;
 import com.A509.Entity.Article;
 import com.A509.Entity.ArticleImage;
+import com.A509.Entity.ArticleStatus;
+import com.A509.Security.MediaVisibility;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 import com.A509.Repository.ActivityLogRepository;
 import com.A509.Repository.ArticleImageRepository;
 import com.A509.Repository.ArticleRepository;
@@ -20,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Transactional
 public class ArticleImageService {
 
     private final ArticleImageRepository articleImageRepository;
@@ -28,6 +34,7 @@ public class ArticleImageService {
     private final UserRepository userRepository;
     private final UniformRepository uniformRepository;
     private final Cloudinary cloudinary;
+    private final CaptionReferenceResolver captionReferences;
 
     public ArticleImageService(
             ArticleImageRepository articleImageRepository,
@@ -35,7 +42,8 @@ public class ArticleImageService {
             ActivityLogRepository activityLogRepository,
             UserRepository userRepository,
             UniformRepository uniformRepository,
-            Cloudinary cloudinary
+            Cloudinary cloudinary,
+            CaptionReferenceResolver captionReferences
     ) {
         this.articleImageRepository = articleImageRepository;
         this.articleRepository = articleRepository;
@@ -43,12 +51,16 @@ public class ArticleImageService {
         this.userRepository = userRepository;
         this.uniformRepository = uniformRepository;
         this.cloudinary = cloudinary;
+        this.captionReferences = captionReferences;
     }
 
     public ArticleImageDTO uploadImage(
             Long articleId,
             MultipartFile file,
-            String username
+            String username,
+            boolean sensitive,
+            String description,
+            Long referenceUniformId
     ) throws IOException {
 
         Article article = articleRepository.findById(articleId)
@@ -78,10 +90,12 @@ public class ArticleImageService {
         ArticleImage image = ArticleImage.builder()
                 .article(article)
                 .imageUrl(imageUrl)
-                .description(null)
+                .description(description == null || description.isBlank() ? null : description.trim())
+                .sensitive(sensitive)
                 .sortOrder(sortOrder)
                 .build();
 
+        String warning = applyReference(image, referenceUniformId, true);
         ArticleImage savedImage =
                 articleImageRepository.save(image);
 
@@ -99,10 +113,18 @@ public class ArticleImageService {
 
         activityLogRepository.save(log);
 
-        return toDTO(savedImage);
+        ArticleImageDTO dto = toDTO(savedImage);
+        dto.setReferenceWarning(warning);
+        return dto;
     }
 
     public List<ArticleImageDTO> getImages(Long articleId) {
+
+        Article article = articleRepository.findById(articleId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (!MediaVisibility.isAdmin() && (article.getDeletedAt() != null || article.getStatus() != ArticleStatus.PUBLISHED)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
 
         return articleImageRepository
                 .findByArticleIdOrderBySortOrderAsc(articleId)
@@ -113,7 +135,7 @@ public class ArticleImageService {
 
     public List<ArticleImageDTO> getReferenceImages(Long uniformId) {
         return articleImageRepository
-                .findByReferenceUniform_IdOrderBySortOrderAsc(uniformId)
+                .findByReferenceUniform_IdAndArticle_StatusAndArticle_DeletedAtIsNullOrderBySortOrderAsc(uniformId, ArticleStatus.PUBLISHED)
                 .stream()
                 .map(this::toDTO)
                 .toList();
@@ -163,10 +185,24 @@ public class ArticleImageService {
         ArticleImage image = articleImageRepository.findById(imageId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy ảnh"));
 
-        String description = update == null ? null : update.getDescription();
-        image.setDescription(description == null || description.isBlank() ? null : description.trim());
+        if (update == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        if (update.getDescription() != null) {
+            image.setDescription(update.getDescription().isBlank() ? null : update.getDescription().trim());
+        }
+        if (update.getSensitive() != null) image.setSensitive(update.getSensitive());
+        String warning = applyReference(image, update.getReferenceUniformId(), update.isReferenceUniformProvided());
+        ArticleImageDTO dto = toDTO(articleImageRepository.save(image));
+        dto.setReferenceWarning(warning);
+        return dto;
+    }
 
-        Long referenceUniformId = update == null ? null : update.getReferenceUniformId();
+    private String applyReference(ArticleImage image, Long referenceUniformId, boolean provided) {
+        var automatic = captionReferences.resolve(image.getDescription());
+        if (automatic.specified()) {
+            image.setReferenceUniform(automatic.uniform());
+            return automatic.warning();
+        }
+        if (!provided) return null;
         if (referenceUniformId == null) {
             image.setReferenceUniform(null);
         } else {
@@ -174,7 +210,7 @@ public class ArticleImageService {
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy hiện vật tham chiếu")));
         }
 
-        return toDTO(articleImageRepository.save(image));
+        return null;
     }
 
     private ArticleImageDTO toDTO(ArticleImage image) {
@@ -183,7 +219,8 @@ public class ArticleImageService {
 
         dto.setId(image.getId());
         dto.setArticleId(image.getArticle().getId());
-        dto.setImageUrl(image.getImageUrl());
+        dto.setSensitive(image.isSensitive());
+        dto.setImageUrl(MediaVisibility.url(image.getImageUrl(), image.isSensitive()));
         dto.setDescription(image.getDescription());
         dto.setSortOrder(image.getSortOrder());
         if (image.getReferenceUniform() != null) {

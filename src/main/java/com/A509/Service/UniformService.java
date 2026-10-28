@@ -47,8 +47,9 @@ public class UniformService {
         return uniformRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public Page<Uniform> getAllUniforms(Pageable pageable) {
-        return uniformRepository.findAll(pageable);
+        return loadPageImages(uniformRepository.findAll(pageable));
     }
 
     @Transactional
@@ -70,6 +71,7 @@ public class UniformService {
         uniform.setMaterial(dto.getMaterial());
         uniform.setCountry(country);
         uniform.setCategory(category);
+        applyPeriod(uniform, dto);
 
         Uniform savedUniform = uniformRepository.save(uniform);
 
@@ -88,6 +90,7 @@ public class UniformService {
                             ? "Ảnh chi tiết của " + savedUniform.getName()
                             : description.trim());
                     image.setSensitive(parseSensitive(dto.getImageSensitive(), index));
+                    image.setDisplayMode(parseDisplayMode(dto.getImageDisplayModes(), index));
 
                     imageRepository.save(image);
                 }
@@ -128,6 +131,8 @@ public class UniformService {
             existingUniform.setCategory(category);
         }
 
+        applyPeriod(existingUniform, dto);
+
         if (dto.getImageFiles() != null && !dto.getImageFiles().isEmpty()) {
             for (int index = 0; index < dto.getImageFiles().size(); index++) {
                 MultipartFile file = dto.getImageFiles().get(index);
@@ -143,6 +148,8 @@ public class UniformService {
                             ? "Ảnh chi tiết của " + existingUniform.getName()
                             : description.trim());
                     image.setSensitive(parseSensitive(dto.getImageSensitive(), index));
+
+                    image.setDisplayMode(parseDisplayMode(dto.getImageDisplayModes(), index));
 
                     imageRepository.save(image);
                 }
@@ -167,11 +174,54 @@ public class UniformService {
         uniformRepository.delete(uniform);
     }
 
+    @Transactional(readOnly = true)
     public Page<Uniform> getUniformsByCategory(Long categoryId, Pageable pageable) {
-        return uniformRepository.findByCategoryId(categoryId, pageable);
+        return loadPageImages(uniformRepository.findByCategoryId(categoryId, pageable));
+    }
+
+    private Page<Uniform> loadPageImages(Page<Uniform> page) {
+        if (!page.isEmpty()) uniformRepository.fetchImagesForIds(page.getContent().stream().map(Uniform::getId).toList());
+        return page;
     }
 
     private boolean parseSensitive(List<String> values, int index) {
         return values != null && index < values.size() && Boolean.parseBoolean(values.get(index));
+    }
+
+    private Image.DisplayMode parseDisplayMode(List<String> values, int index) {
+        return values == null || index >= values.size() ? Image.DisplayMode.GRID
+                : Image.DisplayMode.valueOf(values.get(index));
+    }
+
+    private void applyPeriod(Uniform uniform, UniformDTO dto) {
+        if (uniform.getCategory().getCategoryType() != UniformCategory.CategoryType.REENACTMENT) return;
+        Long periodId = dto.getPeriodCategoryId();
+        if (periodId == null && uniform.getPeriodCategory() != null) periodId = uniform.getPeriodCategory().getId();
+        if (periodId == null) throw new IllegalArgumentException("Hãy chọn giai đoạn phục dựng.");
+        UniformCategory period = categoryRepository.findById(periodId)
+                .orElseThrow(() -> new IllegalArgumentException("Giai đoạn không tồn tại."));
+        validatePeriod(period, uniform.getCountry().getId(), uniform.getCategory().getId());
+        uniform.setPeriodCategory(period);
+        uniform.setPeriod(period.getSlug());
+    }
+
+    private void validatePeriod(UniformCategory period, Long countryId, Long categoryId) {
+        if (period.getCategoryType() != UniformCategory.CategoryType.REENACTMENT || period.getParent() == null
+                || !period.getParent().getId().equals(categoryId) || !countryId.equals(period.getCountryId())) {
+            throw new IllegalArgumentException("Giai đoạn phải thuộc đúng quốc gia và lực lượng đã chọn.");
+        }
+    }
+
+    public record ShowcaseItem(Long id, String name, String description, String history, List<Image> images) {}
+
+    @Transactional(readOnly = true)
+    public List<ShowcaseItem> getShowcase(Long countryId, Long categoryId, Long periodId) {
+        UniformCategory period = categoryRepository.findById(periodId)
+                .orElseThrow(() -> new IllegalArgumentException("Giai đoạn không tồn tại."));
+        validatePeriod(period, countryId, categoryId);
+        return uniformRepository.findShowcase(countryId, categoryId, periodId, period.getSlug()).stream()
+                .map(uniform -> new ShowcaseItem(uniform.getId(), uniform.getName(), uniform.getDescription(), uniform.getHistory(),
+                        uniform.getImages() == null ? List.of() : uniform.getImages().stream()
+                                .sorted(java.util.Comparator.comparing(Image::getId)).toList())).toList();
     }
 }

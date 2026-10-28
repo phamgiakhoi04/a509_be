@@ -28,6 +28,10 @@ public class ArticleImage {
     @Column(name = "image_url", nullable = false)
     private String imageUrl;
 
+    @Column(name = "is_sensitive", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean sensitive = false;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 

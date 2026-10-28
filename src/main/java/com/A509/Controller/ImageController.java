@@ -37,7 +37,7 @@ public class ImageController {
             @RequestBody ImageUpdateDTO request
     ) {
         try {
-            return ResponseEntity.ok(imageService.updateImage(id, request.getDescription(), request.getSensitive()));
+            return ResponseEntity.ok(imageService.updateImage(id, request.getDescription(), request.getSensitive(), request.getDisplayMode()));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

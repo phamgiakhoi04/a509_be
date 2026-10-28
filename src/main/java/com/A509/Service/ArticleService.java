@@ -1,6 +1,9 @@
 package com.A509.Service;
 
 import com.A509.DTO.ArticleDTO;
+import com.A509.Security.MediaVisibility;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import com.A509.Entity.ActivityLog;
 import com.A509.Entity.Article;
 import com.A509.Entity.ArticleStatus;
@@ -103,7 +106,7 @@ public class ArticleService {
 
         Article article = articleRepository.findBySlug(slug)
                 .orElseThrow(() ->
-                        new RuntimeException("Không tìm thấy bài viết")
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy bài viết")
                 );
 
         // The slug endpoint is public.  Never expose drafts or archived/deleted
@@ -111,7 +114,7 @@ public class ArticleService {
         // authenticated endpoint later.
         if (article.getDeletedAt() != null
                 || article.getStatus() != ArticleStatus.PUBLISHED) {
-            throw new RuntimeException("Bài viết không tồn tại");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bài viết không tồn tại");
         }
 
         return toDTO(article);
@@ -139,6 +142,7 @@ public class ArticleService {
         article.setExcerpt(dto.getExcerpt());
         article.setContent(dto.getContent());
         article.setThumbnailUrl(dto.getThumbnailUrl());
+        article.setThumbnailSensitive(Boolean.TRUE.equals(dto.getThumbnailSensitive()));
 
         article.setAuthor(author);
 
@@ -233,6 +237,9 @@ public class ArticleService {
 
         if (dto.getThumbnailUrl() != null) {
             article.setThumbnailUrl(dto.getThumbnailUrl());
+        }
+        if (dto.getThumbnailSensitive() != null) {
+            article.setThumbnailSensitive(dto.getThumbnailSensitive());
         }
 
         if (dto.getStatus() != null) {
@@ -358,7 +365,8 @@ public class ArticleService {
         dto.setExcerpt(article.getExcerpt());
         dto.setContent(article.getContent());
 
-        dto.setThumbnailUrl(article.getThumbnailUrl());
+        dto.setThumbnailSensitive(article.isThumbnailSensitive());
+        dto.setThumbnailUrl(MediaVisibility.url(article.getThumbnailUrl(), article.isThumbnailSensitive()));
 
         dto.setStatus(article.getStatus());
 

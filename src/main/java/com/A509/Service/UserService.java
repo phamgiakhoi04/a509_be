@@ -30,6 +30,22 @@ public class UserService {
     @Autowired
     private ImageService imageService;
 
+    @Transactional(readOnly = true)
+    public java.util.List<UserDTO> getUsersForAdmin() {
+        return userRepository.findAll().stream().map(this::convertToUserDTO).toList();
+    }
+
+    @Transactional
+    public UserDTO setUserStatus(Long id, boolean enabled, String actingUsername) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng."));
+        if (!enabled && user.getUsername().equals(actingUsername)) {
+            throw new IllegalArgumentException("Bạn không thể tự khóa tài khoản đang đăng nhập.");
+        }
+        user.setStatus(enabled);
+        return convertToUserDTO(userRepository.save(user));
+    }
+
     public User registerUser(RegisterDTO registerDTO) {
         if (userRepository.existsByUsername(registerDTO.getUsername())) {
             throw new RuntimeException("Username đã tồn tại!");

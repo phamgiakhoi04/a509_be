@@ -11,7 +11,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/uniform-categories")
-@CrossOrigin(origins = "*")
 public class UniformCategoryController {
 
     @Autowired

@@ -52,6 +52,10 @@ public class Article {
     @Column(name = "thumbnail_url", length = 1000)
     private String thumbnailUrl;
 
+    @Column(name = "thumbnail_sensitive", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean thumbnailSensitive = false;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default

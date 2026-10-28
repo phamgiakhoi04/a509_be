@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
+import jakarta.servlet.DispatcherType;
 
 @Configuration
 @EnableWebSecurity
@@ -46,7 +47,12 @@ public class CustomFilterSecurity {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, error) -> response.setStatus(401))
+                        .accessDeniedHandler((request, response, error) -> response.setStatus(403)))
                 .authorizeHttpRequests(auth -> auth
+                        // Preserve the original HTTP error; an ERROR dispatch has no fresh JWT authentication.
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         // Auth endpoints - public
                         .requestMatchers("/api/auth/**").permitAll()
 
@@ -58,15 +64,19 @@ public class CustomFilterSecurity {
                         .requestMatchers(HttpMethod.GET, "/api/countries/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/uniform-categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**", "/api/activity/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/articles/images/references").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/articles/admin").hasAnyAuthority("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/articles/**").permitAll()
 
-                        // POST/PUT/DELETE - ADMIN only
-                        .requestMatchers(HttpMethod.POST, "/api/uniforms/**", "/api/images/**", "/api/countries/**").hasAnyAuthority("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/uniforms/**", "/api/images/**", "/api/countries/**").hasAnyAuthority("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/images/**").hasAnyAuthority("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/uniforms/**", "/api/images/**", "/api/countries/**").hasAnyAuthority("ADMIN")
+                        // Reads above remain public; every other method in these namespaces is ADMIN only.
+                        .requestMatchers("/api/articles/**", "/api/uniform-categories/**", "/api/categories/**",
+                                "/api/uniforms/**", "/api/images/**", "/api/countries/**").hasAuthority("ADMIN")
+
+                        // A user may only access their own profile; management APIs require ADMIN.
+                        .requestMatchers(HttpMethod.GET, "/api/users/profile").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/users/profile").authenticated()
+                        .requestMatchers("/api/users/**", "/api/activity/**").hasAuthority("ADMIN")
 
                         // Comments endpoints
                         .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()

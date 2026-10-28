@@ -3,6 +3,7 @@ package com.A509.Config;
 import com.A509.Entity.UniformCategory;
 import com.A509.Repository.UniformCategoryRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -11,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class CategoryDataInitializer {
 
     @Bean
+    @ConditionalOnProperty(name = "app.data-initializer.enabled", havingValue = "true", matchIfMissing = true)
     CommandLineRunner syncUniformCategoryNames(UniformCategoryRepository uniformRepository) {
         return args -> {
             ensureReenactmentRoot(uniformRepository);
