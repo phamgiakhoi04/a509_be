@@ -15,12 +15,12 @@ public class RegisterController {
     private RegisterService registerService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterDTO registerDTO) {
+    public ResponseEntity<?> register(@jakarta.validation.Valid @RequestBody RegisterDTO registerDTO) {
         try {
             UserDTO newUser = registerService.registerNewUser(registerDTO);
             return ResponseEntity.ok(newUser);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body("Không thể đăng ký với thông tin này. Kiểm tra tên đăng nhập, email và mật khẩu.");
         }
     }
 }

@@ -14,6 +14,10 @@ public class MediaCacheFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         String path = request.getRequestURI().substring(request.getContextPath().length());
+        if (path.startsWith("/api/")) {
+            response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+            response.addHeader("Vary", "X-A509-Language");
+        }
         if (path.startsWith("/api/articles") || path.startsWith("/api/uniforms") || path.startsWith("/api/images")) {
             response.setHeader("Cache-Control", "no-store");
             response.addHeader("Vary", "Authorization");

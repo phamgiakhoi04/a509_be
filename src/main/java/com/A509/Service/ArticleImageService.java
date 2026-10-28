@@ -72,10 +72,11 @@ public class ArticleImageService {
             throw new RuntimeException("Bài viết đã bị xóa");
         }
 
+        com.A509.Security.UploadPolicy.validate(file);
         // Upload lên Cloudinary
         Map<?, ?> uploadResult = cloudinary.uploader().upload(
                 file.getBytes(),
-                ObjectUtils.emptyMap()
+                ObjectUtils.asMap("resource_type", "image")
         );
 
         String imageUrl = uploadResult.get("secure_url").toString();

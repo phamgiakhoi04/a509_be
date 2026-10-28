@@ -22,7 +22,12 @@ public class JwtUntilHelper {
     private String secret;
 
     public String generateToken(String username) {
+        return generateToken(username, 0);
+    }
+
+    public String generateToken(String username, long version) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("ver", version);
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(username)
@@ -39,9 +44,12 @@ public class JwtUntilHelper {
     public boolean verifyToken(String token, UserDetails userDetails) {
         try {
             final String username = getSubject(token);
-            return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+            Number version = extractAllClaims(token).get("ver", Number.class);
+            long expected = userDetails instanceof com.A509.Security.VersionedUserDetails details ? details.getTokenVersion() : 0;
+            return username.equals(userDetails.getUsername()) && !isTokenExpired(token)
+                    && (version == null ? 0 : version.longValue()) == expected;
         } catch (Exception e) {
-            System.out.println("Lỗi validate token: " + e.getMessage());
+            // Never log credentials or token contents.
             return false;
         }
     }

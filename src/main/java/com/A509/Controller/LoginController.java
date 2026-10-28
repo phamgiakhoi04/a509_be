@@ -15,12 +15,12 @@ public class LoginController {
     private LoginService loginService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginDTO loginDTO) {
+    public ResponseEntity<?> login(@jakarta.validation.Valid @RequestBody LoginDTO loginDTO) {
         try {
             AuthDTO response = loginService.authenticateAndGetToken(loginDTO);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Đăng nhập thất bại: " + e.getMessage());
+            return ResponseEntity.status(401).body("Tên đăng nhập hoặc mật khẩu không hợp lệ.");
         }
     }
 }

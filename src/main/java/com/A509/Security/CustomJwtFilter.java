@@ -46,6 +46,13 @@ public class CustomJwtFilter extends OncePerRequestFilter {
                         SecurityContextHolder.getContext().setAuthentication(authToken);
                     }
                 }
+            } catch (org.springframework.dao.DataAccessException unavailable) {
+                SecurityContextHolder.clearContext();
+                // A temporary account-store outage must not invalidate a valid browser session.
+                response.setStatus(503);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"message\":\"Dịch vụ tài khoản tạm thời không khả dụng.\"}");
+                return;
             } catch (Exception ex) {
                 // Invalid, expired or unresolvable credentials behave as anonymous.
                 // Do not catch exceptions from the downstream application/filter chain.

@@ -6,7 +6,14 @@ services:
     container_name: a509_container
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: a509_db
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
+    external: true
+    name: ${MYSQL_DATA_VOLUME:?Set MYSQL_DATA_VOLUME to the existing persisted MySQL volume}

@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class CategoryDataInitializer {
 
     @Bean
-    @ConditionalOnProperty(name = "app.data-initializer.enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(name = "app.data-initializer.enabled", havingValue = "true", matchIfMissing = false)
     CommandLineRunner syncUniformCategoryNames(UniformCategoryRepository uniformRepository) {
         return args -> {
             ensureReenactmentRoot(uniformRepository);

@@ -56,8 +56,9 @@ public class CountryController {
             country.setDescription(description);
 
             if (flagFile != null && !flagFile.isEmpty()) {
+                com.A509.Security.UploadPolicy.validate(flagFile);
                 Map<?, ?> uploadResult = cloudinary.uploader().upload(flagFile.getBytes(),
-                        ObjectUtils.asMap("folder", "countries/flags", "resource_type", "auto"));
+                        ObjectUtils.asMap("folder", "countries/flags", "resource_type", "image"));
                 country.setFlagImageUrl(uploadResult.get("secure_url").toString());
             }
             return ResponseEntity.ok(countryService.addCountry(country));
@@ -85,9 +86,10 @@ public class CountryController {
             existingCountry.setDescription(description);
 
             if (flagFile != null && !flagFile.isEmpty()) {
+                com.A509.Security.UploadPolicy.validate(flagFile);
                 deleteCloudinaryImage(existingCountry.getFlagImageUrl());
                 Map<?, ?> uploadResult = cloudinary.uploader().upload(flagFile.getBytes(),
-                        ObjectUtils.asMap("folder", "countries/flags", "resource_type", "auto"));
+                        ObjectUtils.asMap("folder", "countries/flags", "resource_type", "image"));
                 existingCountry.setFlagImageUrl(uploadResult.get("secure_url").toString());
             }
 

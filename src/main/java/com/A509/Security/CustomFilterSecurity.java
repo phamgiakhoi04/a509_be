@@ -55,6 +55,9 @@ public class CustomFilterSecurity {
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         // Auth endpoints - public
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/analytics/pageviews", "/api/contact").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/search").permitAll()
 
                         // OPTIONS requests - public
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

@@ -25,6 +25,7 @@ public class RegisterService {
 
     @Transactional
     public UserDTO registerNewUser(RegisterDTO registerDTO) {
+        com.A509.Security.PasswordPolicy.validate(registerDTO.getPassword());
         if (userRepository.existsByUsername(registerDTO.getUsername())) {
             throw new RuntimeException("Tên đăng nhập đã tồn tại!");
         }

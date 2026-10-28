@@ -134,7 +134,7 @@ class MediaApiTest {
 
     @Test void captionAutoReferenceWorksOnUploadAndPatchAndReportsUnmatchedNames() throws Exception {
         mvc.perform(auth(multipart("/api/articles/" + article.getId() + "/images")
-                        .file(new MockMultipartFile("file", "test.jpg", "image/jpeg", new byte[]{1,2}))
+                        .file(new MockMultipartFile("file", "test.jpg", "image/jpeg", java.util.Base64.getDecoder().decode("/9j/4AAQSkZJRgABAQAAAQABAAD/2Q==")))
                         .param("sensitive", "true").param("description", "Ảnh tư liệu\nDO VAT: mu coi"), "admin"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.sensitive").value(true))
                 .andExpect(jsonPath("$.referenceUniformId").value(uniform.getId()));

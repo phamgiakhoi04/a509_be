@@ -33,11 +33,13 @@ public class ForgotPasswordService {
     private String frontendUrl;
 
     public String forgotPassword(String email) {
-        User user = userRepository.findByEmail(email.trim())
-                .orElseThrow(() -> new RuntimeException("Email không tồn tại trong hệ thống!"));
+        User user = userRepository.findByEmail(email.trim()).orElse(null);
+        if (user == null || !user.isStatus()) return "Nếu email hợp lệ, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu.";
 
-        String token = UUID.randomUUID().toString();
-        user.setResetToken(token);
+        byte[] random = new byte[32];
+        new java.security.SecureRandom().nextBytes(random);
+        String token = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(random);
+        user.setResetToken(hash(token));
         user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(15)); // Hết hạn sau 15p
         userRepository.save(user);
         try {
@@ -46,25 +48,34 @@ public class ForgotPasswordService {
             user.setResetToken(null);
             user.setResetTokenExpiry(null);
             userRepository.save(user);
-            throw new RuntimeException("Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra cấu hình MAIL_USERNAME/MAIL_PASSWORD.");
+            // Same response for unavailable mail and unknown accounts.
         }
 
-        return "Đã gửi link đặt lại mật khẩu vào email: " + email;
+        return "Nếu email hợp lệ, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu.";
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void resetPassword(String token, String newPassword) {
-        User user = userRepository.findByResetToken(token)
+        com.A509.Security.PasswordPolicy.validate(newPassword);
+        if (token == null || token.length() > 200) throw new IllegalArgumentException("Link không hợp lệ.");
+        User user = userRepository.findByResetToken(hash(token))
                 .orElseThrow(() -> new RuntimeException("Link không hợp lệ hoặc sai token!"));
 
-        if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+        if (!user.isStatus() || user.getResetTokenExpiry() == null || !user.getResetTokenExpiry().isAfter(LocalDateTime.now())) {
             throw new RuntimeException("Link đã hết hạn! Vui lòng gửi yêu cầu mới.");
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setTokenVersion(user.getTokenVersion() + 1);
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
 
         userRepository.save(user);
+    }
+
+    static String hash(String token) {
+        try { return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(token.getBytes(java.nio.charset.StandardCharsets.UTF_8))); }
+        catch (java.security.NoSuchAlgorithmException ex) { throw new IllegalStateException(ex); }
     }
 
     private void sendEmail(String toEmail, String token) {
@@ -87,6 +98,6 @@ public class ForgotPasswordService {
                 + "Nếu bạn không yêu cầu, vui lòng bỏ qua email này.");
 
         mailSender.send(message);
-        System.out.println(">>> Đã gửi mail thành công đến: " + toEmail);
+
     }
 }

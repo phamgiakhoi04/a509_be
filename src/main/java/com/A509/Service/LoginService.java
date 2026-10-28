@@ -37,7 +37,7 @@ public class LoginService {
                 throw new RuntimeException("Tài khoản đã bị khóa! Vui lòng liên hệ Admin.");
             }
 
-            String token = jwtUntilHelper.generateToken(loginDTO.getUsername());
+            String token = jwtUntilHelper.generateToken(loginDTO.getUsername(), user.getTokenVersion());
 
             return AuthDTO.builder()
                     .token(token)

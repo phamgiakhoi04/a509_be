@@ -31,6 +31,10 @@ public class ContactController {
         if (name.isBlank() || email.isBlank() || subject.isBlank() || messageText.isBlank()) {
             return ResponseEntity.badRequest().body("Vui lòng điền đầy đủ thông tin liên hệ.");
         }
+        if (name.length() > 150 || subject.length() > 200 || messageText.length() > 10000
+                || email.length() > 254 || !email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")
+                || subject.contains("\r") || subject.contains("\n") || name.contains("\r") || name.contains("\n"))
+            return ResponseEntity.badRequest().body("Thông tin liên hệ không hợp lệ hoặc quá dài.");
         if (recipient.isBlank()) {
             return ResponseEntity.status(503).body("Hệ thống chưa cấu hình email nhận liên hệ.");
         }

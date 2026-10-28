@@ -42,6 +42,7 @@ public class UserService {
         if (!enabled && user.getUsername().equals(actingUsername)) {
             throw new IllegalArgumentException("Bạn không thể tự khóa tài khoản đang đăng nhập.");
         }
+        if (user.isStatus() != enabled) user.setTokenVersion(user.getTokenVersion() + 1);
         user.setStatus(enabled);
         return convertToUserDTO(userRepository.save(user));
     }
@@ -106,10 +107,7 @@ public class UserService {
         }
 
         if (dto.getAvatarFile() != null && !dto.getAvatarFile().isEmpty()) {
-            if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
-                imageService.deleteImageFromCloud(user.getAvatarUrl());
-            }
-            // Upload ảnh mới
+            // Validate and upload successfully before changing or removing the current avatar.
             String newAvatarUrl = imageService.uploadImage(dto.getAvatarFile());
             user.setAvatarUrl(newAvatarUrl);
         }

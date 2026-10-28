@@ -18,12 +18,12 @@ class CategoryDataInitializerTest {
     }
 
     @Test
-    void defaultBehaviorIsPreservedUntilCleanupIsApproved() {
+    void defaultStartupDoesNotModifyExistingContent() {
         var repository = mock(UniformCategoryRepository.class);
         new ApplicationContextRunner()
                 .withBean(UniformCategoryRepository.class, () -> repository)
                 .withUserConfiguration(CategoryDataInitializer.class)
-                .run(context -> assertThat(context).hasBean("syncUniformCategoryNames"));
+                .run(context -> assertThat(context).doesNotHaveBean("syncUniformCategoryNames"));
         verifyNoInteractions(repository);
     }
 }
