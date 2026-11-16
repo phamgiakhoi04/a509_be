@@ -1,4 +1,5 @@
 package com.A509.Service;
+import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.server.ResponseStatusException;
@@ -8,6 +9,7 @@ import java.util.*;
 
 @Service
 public class SearchService {
+ private static final String RICH_TEXT_PREFIX = "<!--a509-rich-text:v1-->";
  private final JdbcTemplate jdbc;private final TranslationService translations;
  public SearchService(JdbcTemplate jdbc,TranslationService translations){this.jdbc=jdbc;this.translations=translations;}
  public record Result(String key,String type,String title,String description,String href,int rank) {}
@@ -35,13 +37,44 @@ public class SearchService {
   Map<String,Set<Long>> ids=new HashMap<>();documents.forEach(d->ids.computeIfAbsent(d.resource,k->new HashSet<>()).add(d.id));var loaded=translations.load(ids);
   String needle=normalize(query);String[] terms=needle.split("\\s+");List<Result> matches=new ArrayList<>();
   for(var d:documents){if(!filter.equals("all")&&!filter.equals(d.type))continue;Map<String,String> localized=new LinkedHashMap<>();StringBuilder searchable=new StringBuilder();
-   d.fields.forEach((field,value)->{String translated=translations.localized(d.resource,d.id,field,value,true,loaded);localized.put(field,english?translated:value);searchable.append(' ').append(value).append(' ').append(translated);});
+   d.fields.forEach((field, value) -> {
+    String translated = translations.localized(d.resource, d.id, field, value, true, loaded);
+    localized.put(field, english ? translated : value);
+    String originalText = searchableText(d.resource, field, value);
+    String translatedText = value.equals(translated) ? originalText : searchableText(d.resource, field, translated);
+    searchable.append(' ').append(originalText).append(' ').append(translatedText);
+   });
    String haystack=normalize(searchable.toString());if(!Arrays.stream(terms).allMatch(haystack::contains))continue;
-   String title=localized.getOrDefault("title",localized.getOrDefault("name",localized.getOrDefault("countryName",localized.getOrDefault("categoryName",""))));String description=localized.getOrDefault("excerpt",localized.getOrDefault("description",""));if(description.isBlank())description=localized.getOrDefault("content","");
-   description=description.replaceAll("<[^>]+>"," ").replaceAll("\\s+"," ").trim();if(description.length()>240)description=description.substring(0,240)+"…";
+   String title=localized.getOrDefault("title",localized.getOrDefault("name",localized.getOrDefault("countryName",localized.getOrDefault("categoryName",""))));
+   String description = searchDescription(d.resource, localized);
    int rank=normalize(title).equals(needle)?100:normalize(title).startsWith(needle)?75:normalize(title).contains(needle)?50:10;matches.add(new Result(d.resource+"-"+d.id,d.type,title,description,d.href,rank));
   }
   matches.sort(Comparator.comparingInt(Result::rank).reversed().thenComparing(Result::title).thenComparing(Result::key));int start=Math.min(matches.size(),page*size);return Map.of("items",matches.subList(start,Math.min(matches.size(),start+size)),"total",matches.size(),"page",page,"size",size);
  }
+
+ private static boolean isRichBody(String resource, String field, String value) {
+  return value.startsWith(RICH_TEXT_PREFIX) && (
+      (resource.equals("ARTICLE") && field.equals("content")) ||
+      (resource.equals("UNIFORM") && field.equals("history")));
+ }
+
+ private static String searchableText(String resource, String field, String value) {
+  if (isRichBody(resource, field, value)) {
+   return Jsoup.parseBodyFragment(value.substring(RICH_TEXT_PREFIX.length())).body().text();
+  }
+  return value;
+ }
+
+ private static String searchDescription(String resource, Map<String, String> localized) {
+  String description = localized.getOrDefault("excerpt", localized.getOrDefault("description", ""));
+  boolean fromContent = description.isBlank();
+  if (fromContent) description = localized.getOrDefault("content", "");
+  description = fromContent && isRichBody(resource, "content", description)
+      ? searchableText(resource, "content", description)
+      : description.replaceAll("<[^>]+>", " ");
+  description = description.replaceAll("\\s+", " ").trim();
+  return description.length() > 240 ? description.substring(0, 240) + "…" : description;
+ }
+
  private Map<String,String> fields(String...values){Map<String,String> result=new LinkedHashMap<>();for(int i=0;i<values.length;i+=2)result.put(values[i],values[i+1]==null?"":values[i+1]);return result;}
 }

@@ -79,6 +79,29 @@ class PlatformFeaturesTest {
   mvc.perform(get("/api/search").param("q","English unique").header("X-A509-Language","en")).andExpect(jsonPath("$.items[0].title").value("Research on helmets"));
   mvc.perform(get("/api/search").param("q","ao phuc dung").param("type","reenactment")).andExpect(jsonPath("$.items[0].href").value("/hoat-dong/phuc-dung/viet-nam/quan-doi-nhan-dan-viet-nam/thoi-ky-tien-khoi-nghia#content-"+uniform.getId()));
  }
+ @Test void richArticleSearchKeepsReadableTextInBothLanguages() throws Exception {
+  article.setContent("<!--a509-rich-text:v1--><p><span style=\"font-size: 22px\">Nội dung được định dạng</span> &amp; &lt;ví dụ&gt;</p>");
+  em.flush();
+  translations.save("ARTICLE", article.getId(), new TranslationService.Update(
+      Map.of("content", "<!--a509-rich-text:v1--><p>Translated <strong>content</strong><br> &amp; &lt;example&gt;</p>"),
+      Map.of("content", article.getContent())));
+
+  mvc.perform(get("/api/search").param("q", "noi dung duoc dinh dang"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].description").value("Nội dung được định dạng & <ví dụ>"));
+  mvc.perform(get("/api/search").param("q", "translated content").header("X-A509-Language", "en"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].description").value("Translated content & <example>"));
+  mvc.perform(get("/api/search").param("q", "font-size"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(0));
+ }
+ @Test void richUniformHistorySearchMatchesVisibleWords() throws Exception {
+  uniform.setHistory("<!--a509-rich-text:v1--><p style=\"text-align: right\">Lịch sử trang phục</p>");
+  em.flush();
+
+  mvc.perform(get("/api/search").param("q", "lich su trang phuc").param("type", "reenactment"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].title").value(uniform.getName()));
+  mvc.perform(get("/api/search").param("q", "text-align").param("type", "reenactment"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(0));
+ }
  @Test void translatedPublicActivityUsesPublishedTitle()throws Exception{
   ActivityLog log=new ActivityLog();log.setArticle(article);log.setUser(user);log.setAction("UPDATE");log.setDescription("Internal detail must never appear");em.persist(log);em.flush();
   translations.save("ARTICLE",article.getId(),new TranslationService.Update(Map.of("title","Research on helmets"),Map.of("title",article.getTitle())));
