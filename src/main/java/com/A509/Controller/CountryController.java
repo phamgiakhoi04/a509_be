@@ -1,5 +1,6 @@
 package com.A509.Controller;
 
+import com.A509.Config.CloudinaryConfig;
 import com.A509.Entity.Country;
 import com.A509.Service.CountryService;
 import com.cloudinary.Cloudinary;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.List;
@@ -27,7 +29,7 @@ public class CountryController {
     @Autowired
     private CountryService countryService;
 
-    @Autowired
+    @Autowired(required = false)
     private Cloudinary cloudinary;
 
     @GetMapping
@@ -57,11 +59,13 @@ public class CountryController {
 
             if (flagFile != null && !flagFile.isEmpty()) {
                 com.A509.Security.UploadPolicy.validate(flagFile);
-                Map<?, ?> uploadResult = cloudinary.uploader().upload(flagFile.getBytes(),
+                Map<?, ?> uploadResult = CloudinaryConfig.requireForUpload(cloudinary).uploader().upload(flagFile.getBytes(),
                         ObjectUtils.asMap("folder", "countries/flags", "resource_type", "image"));
                 country.setFlagImageUrl(uploadResult.get("secure_url").toString());
             }
             return ResponseEntity.ok(countryService.addCountry(country));
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (IOException e) {
@@ -87,13 +91,16 @@ public class CountryController {
 
             if (flagFile != null && !flagFile.isEmpty()) {
                 com.A509.Security.UploadPolicy.validate(flagFile);
+                Cloudinary storage = CloudinaryConfig.requireForUpload(cloudinary);
                 deleteCloudinaryImage(existingCountry.getFlagImageUrl());
-                Map<?, ?> uploadResult = cloudinary.uploader().upload(flagFile.getBytes(),
+                Map<?, ?> uploadResult = storage.uploader().upload(flagFile.getBytes(),
                         ObjectUtils.asMap("folder", "countries/flags", "resource_type", "image"));
                 existingCountry.setFlagImageUrl(uploadResult.get("secure_url").toString());
             }
 
             return ResponseEntity.ok(countryService.updateCountry(id, existingCountry));
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (IOException e) {
@@ -120,7 +127,7 @@ public class CountryController {
 
     private void deleteCloudinaryImage(String imageUrl) {
         String publicId = extractPublicId(imageUrl);
-        if (publicId == null) {
+        if (publicId == null || cloudinary == null) {
             return;
         }
         try {

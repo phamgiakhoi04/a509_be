@@ -1,5 +1,6 @@
 package com.A509.Service;
 
+import com.A509.Config.CloudinaryConfig;
 import com.A509.DTO.ArticleImageDTO;
 import com.A509.DTO.ArticleImageUpdateDTO;
 import com.A509.Entity.ActivityLog;
@@ -17,6 +18,7 @@ import com.A509.Repository.UserRepository;
 import com.A509.Repository.UniformRepository;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -42,7 +44,7 @@ public class ArticleImageService {
             ActivityLogRepository activityLogRepository,
             UserRepository userRepository,
             UniformRepository uniformRepository,
-            Cloudinary cloudinary,
+            @Nullable Cloudinary cloudinary,
             CaptionReferenceResolver captionReferences
     ) {
         this.articleImageRepository = articleImageRepository;
@@ -73,8 +75,7 @@ public class ArticleImageService {
         }
 
         com.A509.Security.UploadPolicy.validate(file);
-        // Upload lên Cloudinary
-        Map<?, ?> uploadResult = cloudinary.uploader().upload(
+        Map<?, ?> uploadResult = CloudinaryConfig.requireForUpload(cloudinary).uploader().upload(
                 file.getBytes(),
                 ObjectUtils.asMap("resource_type", "image")
         );

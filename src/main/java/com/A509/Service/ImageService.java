@@ -1,5 +1,6 @@
 package com.A509.Service;
 
+import com.A509.Config.CloudinaryConfig;
 import com.A509.Entity.Image;
 import com.A509.Repository.ImageRepository;
 import com.cloudinary.Cloudinary;
@@ -18,16 +19,20 @@ public class ImageService {
     @Autowired
     private ImageRepository imageRepository;
 
-    @Autowired
+    @Autowired(required = false)
     private Cloudinary cloudinary;
 
     public String uploadImage(MultipartFile file) throws IOException {
         com.A509.Security.UploadPolicy.validate(file);
-        Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", "image"));
+        Map<?, ?> uploadResult = CloudinaryConfig.requireForUpload(cloudinary).uploader()
+                .upload(file.getBytes(), ObjectUtils.asMap("resource_type", "image"));
         return uploadResult.get("secure_url").toString();
     }
 
     public void deleteImageFromCloud(String imageUrl) {
+        if (cloudinary == null) {
+            return;
+        }
         try {
             String publicId = getPublicIdFromUrl(imageUrl);
 
