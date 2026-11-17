@@ -46,6 +46,8 @@ public class CustomFilterSecurity {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(
+                        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")))
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, error) -> response.setStatus(401))
@@ -63,6 +65,8 @@ public class CustomFilterSecurity {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // GET endpoints - PUBLIC (ai cũng xem được)
+                        .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
+                        .requestMatchers(HttpMethod.HEAD, "/api/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/uniforms/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/countries/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()

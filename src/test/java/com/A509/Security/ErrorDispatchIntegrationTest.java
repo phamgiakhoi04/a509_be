@@ -57,6 +57,21 @@ class ErrorDispatchIntegrationTest {
         assertEquals(500, client.send(request, HttpResponse.BodyHandlers.discarding()).statusCode());
     }
 
+    @Test void anonymousHealthCheckUsesMinimalResponseAndSecurityHeaders() throws Exception {
+        var uri = URI.create("http://localhost:" + port + "/api/health");
+        var health = client.send(HttpRequest.newBuilder(uri).GET().build(), HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, health.statusCode());
+        assertEquals("{\"status\":\"UP\"}", health.body());
+        assertEquals("no-store", health.headers().firstValue("Cache-Control").orElseThrow());
+        assertEquals("nosniff", health.headers().firstValue("X-Content-Type-Options").orElseThrow());
+        assertEquals("DENY", health.headers().firstValue("X-Frame-Options").orElseThrow());
+        assertEquals("strict-origin-when-cross-origin", health.headers().firstValue("Referrer-Policy").orElseThrow());
+        assertEquals("default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+                health.headers().firstValue("Content-Security-Policy").orElseThrow());
+        var head = HttpRequest.newBuilder(uri).method("HEAD", HttpRequest.BodyPublishers.noBody()).build();
+        assertEquals(200, client.send(head, HttpResponse.BodyHandlers.discarding()).statusCode());
+    }
+
     @TestConfiguration static class ErrorProbeConfig {
         @Bean ErrorProbe errorProbe() { return new ErrorProbe(); }
     }

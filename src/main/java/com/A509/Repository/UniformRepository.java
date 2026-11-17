@@ -26,7 +26,7 @@ public interface UniformRepository extends JpaRepository<Uniform, Long> {
     @Query("select distinct u from Uniform u left join fetch u.images where u.id in :ids")
     List<Uniform> fetchImagesForIds(List<Long> ids);
 
-    @EntityGraph(attributePaths = {"country", "images"})
+    @EntityGraph(attributePaths = {"country", "category", "periodCategory", "images"})
     Optional<Uniform> findById(Long id);
 
     List<Uniform> findByNameContainingIgnoreCase(String name);

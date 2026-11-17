@@ -21,6 +21,16 @@ Compose local hiện chỉ publish `127.0.0.1:3306`. Cần đặt `MYSQL_ROOT_PA
 
 ## Cấu hình
 
+### Triển khai API qua HTTPS
+
+- Dùng `Dockerfile` ở gốc repo. Image dùng Java 21 và profile `prod`, kiểm tra schema MySQL lúc khởi động. Host trỏ tới cổng `PORT` của container, mặc định `8080`.
+- Cấu hình `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` và `SPRING_DATASOURCE_PASSWORD` cho DB đã khôi phục và kiểm tra. Đặt `JWT_SECRET` bằng khóa ngẫu nhiên ít nhất 32 byte, mã hóa Base64. Lưu mật khẩu và khóa API trong phần secrets của host.
+- Đặt `APP_CORS_ALLOWED_ORIGINS=https://phamgiakhoi04.github.io` và `APP_FRONTEND_URL=https://phamgiakhoi04.github.io/A509`. CORS dùng origin, còn liên kết đặt lại mật khẩu cần cả đường dẫn dự án.
+- Đặt `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `MAIL_USERNAME` và `MAIL_PASSWORD`. SMTP dùng Gmail cổng 587 theo mặc định. Có thể đổi host và cổng bằng `SPRING_MAIL_HOST` và `SPRING_MAIL_PORT`.
+- Health check của host gọi `GET /api/health`. Sau deploy, thử thêm `GET /api/categories` để xác nhận đọc được DB và kiểm tra CORS từ frontend.
+
+### Tùy chọn ứng dụng
+
 ```properties
 APP_ANALYTICS_RETENTION_DAYS=90
 APP_ANALYTICS_PROXY_SECRET=

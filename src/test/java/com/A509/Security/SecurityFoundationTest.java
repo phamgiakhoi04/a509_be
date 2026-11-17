@@ -26,10 +26,11 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -55,7 +57,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = "app.cors.allowed-origins= http://localhost:5173, https://phamgiakhoi04.github.io, ")
 @WebAppConfiguration
 class SecurityFoundationTest {
-    static final byte[] KEY = new byte[32];
+    private static final byte[] KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256).getEncoded();
     @Autowired WebApplicationContext context;
     @Autowired UserRepository users;
     @Autowired CommentRepository comments;
@@ -64,6 +66,11 @@ class SecurityFoundationTest {
     @Autowired JwtUntilHelper jwt;
     MockMvc mvc;
     User owner;
+
+    @DynamicPropertySource
+    static void jwtProperties(DynamicPropertyRegistry registry) {
+        registry.add("jwt.secret", () -> Base64.getEncoder().encodeToString(KEY));
+    }
 
     @BeforeEach
     void setUp() {
@@ -124,8 +131,10 @@ class SecurityFoundationTest {
     }
 
     static Stream<String> invalidTokens() {
+        byte[] wrongKey = KEY.clone();
+        wrongKey[0] ^= 1;
         return Stream.of("garbage", "", signed("user", -60_000, KEY),
-                signed("user", 60_000, new byte[64]), signed("missing", 60_000, KEY));
+                signed("user", 60_000, wrongKey), signed("missing", 60_000, KEY));
     }
 
     @ParameterizedTest
@@ -219,11 +228,7 @@ class SecurityFoundationTest {
         @Bean CommentRepository commentRepository() { return mock(CommentRepository.class); }
         @Bean UniformRepository uniformRepository() { return mock(UniformRepository.class); }
         @Bean ArticleRepository articleRepository() { return mock(ArticleRepository.class); }
-        @Bean JwtUntilHelper jwtUntilHelper() {
-            var helper = new JwtUntilHelper();
-            ReflectionTestUtils.setField(helper, "secret", java.util.Base64.getEncoder().encodeToString(KEY));
-            return helper;
-        }
+        @Bean JwtUntilHelper jwtUntilHelper() { return new JwtUntilHelper(); }
     }
 
     // A probe intentionally accepts every method: the real security chain must block unauthorized calls.
